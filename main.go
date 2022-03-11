@@ -2,31 +2,63 @@ package main
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"fmt"
+	"io"
 	"log"
 )
 
 func main() {
-	text := []byte("This message is secret >u<")
-	key := []byte("123 123 123 123 123 123 123 123!") // 32 bytes
+	text := []byte("This message is secret wiuuuuuuuuuuui top secret")
+	key := []byte("123456789abcdefghijklmnopqrstuvw")
 
-	// create new cipher block
-	// 16 bytes - AES-128
-	// 24 bytes - AES-192
-	// 32 bytes - AES-256 - the safer
-	ciph, err := aes.NewCipher(key)
+	// encrypt
+	// create a block cipher
+	cpbl, err := aes.NewCipher(key)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// slice with block size
-	aux := make([]byte, ciph.BlockSize())
+	// cipher package - implements standard block cipher
+	//
+	gcm, err := cipher.NewGCM(cpbl)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// encrypt
-	ciph.Encrypt(aux, text)
-	fmt.Println("encrypt:", string(aux), len(aux))
+	nonce := make([]byte, gcm.NonceSize())
+
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	encrypt := gcm.Seal(nonce, nonce, text, nil)
+
+	fmt.Println(string(encrypt))
 
 	// decrypt
-	ciph.Decrypt(text, aux)
-	fmt.Println("decrypt:", string(text), len(text))
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	gcm, err = cipher.NewGCM(c)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(encrypt) < nonceSize {
+		fmt.Println(err)
+	}
+
+	nonce, ciphertext := encrypt[:nonceSize], encrypt[nonceSize:]
+	decrypt, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(string(decrypt))
 }
