@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"fmt"
 	"log"
 )
@@ -15,11 +16,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	encrypt := make([]byte, block.BlockSize())
-	block.Encrypt(encrypt, text)
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	nonce := make([]byte, aesgcm.NonceSize())
+
+	// encrypt
+	encrypt := aesgcm.Seal(nil, nonce, text, nil)
 	fmt.Println(string(encrypt))
 
-	decrypt := make([]byte, 1024)
-	block.Decrypt(decrypt, encrypt)
+	//decrypt
+	decrypt, err := aesgcm.Open(nil, nonce, encrypt, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println(string(decrypt))
 }
