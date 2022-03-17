@@ -1,31 +1,32 @@
 package main
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/rc4"
 	"fmt"
 	"log"
 )
 
 func main() {
-	key := []byte("123456789abcdefghijklmno")          // 16, 24, 32
-	iv := []byte("1234567890000000")                   // 16
-	text := []byte("This message is secret wiiiiiiiu") // multiple of block size (16, 32, 48...)
+	key := []byte("1234")
+	text := []byte("This message is secret wiu")
 	encrypt := make([]byte, len(text))
 	decrypt := make([]byte, len(text))
 
-	block, err := aes.NewCipher(key)
+	// encrypt
+	rc4C, err := rc4.NewCipher(key)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// encrypt
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(encrypt, text)
+	rc4C.XORKeyStream(encrypt, text)
 	fmt.Println(string(encrypt))
 
 	// decrypt
-	mode = cipher.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(decrypt, encrypt)
+	rc4C, err = rc4.NewCipher(key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rc4C.XORKeyStream(decrypt, encrypt)
 	fmt.Println(string(decrypt))
 }
